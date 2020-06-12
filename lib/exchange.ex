@@ -22,7 +22,11 @@ defmodule Exchange do
 
   @spec send_instruction(exchange :: pid(), event :: event()) :: :ok | {:error, any()}
   def send_instruction(exchange, event) do
-    Agent.update(exchange, fn state -> handle_event(state, event) end)
+    state = Agent.get(exchange, & &1)
+
+    with {:ok, new_state} <- handle_event(state, event) do
+      Agent.update(exchange, fn _ -> new_state end)
+    end
   end
 
   @spec order_book(exchange :: pid(), book_depth :: integer()) :: list(book())
@@ -37,7 +41,9 @@ defmodule Exchange do
     end)
   end
 
-  defp handle_event(store, %{instruction: :new} = params), do: insert(store, params)
+  defp handle_event(store, %{instruction: :new} = params) do
+    {:ok, insert(store, params)}
+  end
 
   defp handle_event(store, %{instruction: :delete, price_level_index: price_level}) do
     delete(store, price_level)
@@ -81,17 +87,20 @@ defmodule Exchange do
     store = Map.new(store)
 
     if Map.has_key?(store, key) do
-      Map.update!(store, key, fn book ->
-        Map.put(book, params.side, %{price: params.price, quantity: params.quantity})
-      end)
+      updated =
+        Map.update!(store, key, fn book ->
+          Map.put(book, params.side, %{price: params.price, quantity: params.quantity})
+        end)
+
+      {:ok, updated}
     else
       {:error, :not_found}
     end
   end
 
   defp get_book_info(book) do
-    bid_side = Map.get(book, :bid, %{price: 0, quantity: 0.0})
-    ask_side = Map.get(book, :ask, %{price: 0, quantity: 0.0})
+    bid_side = Map.get(book, :bid, %{price: 0.0, quantity: 0})
+    ask_side = Map.get(book, :ask, %{price: 0.0, quantity: 0})
 
     %{
       ask_price: ask_side.price,

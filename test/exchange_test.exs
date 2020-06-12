@@ -113,4 +113,51 @@ defmodule ExchangeTest do
 
     assert Exchange.order_book(exchange_pid, 4) == expected
   end
+
+  test "on delete existing price levels with a higher index will be shifted down" do
+    {:ok, exchange_pid} = Exchange.start_link()
+
+    Exchange.send_instruction(exchange_pid, %{
+      instruction: :new,
+      side: :ask,
+      price_level_index: 3,
+      price: 60.0,
+      quantity: 30
+    })
+
+    Exchange.send_instruction(exchange_pid, %{
+      instruction: :new,
+      side: :ask,
+      price_level_index: 5,
+      price: 70.0,
+      quantity: 20
+    })
+
+    Exchange.send_instruction(exchange_pid, %{
+      instruction: :new,
+      side: :ask,
+      price_level_index: 7,
+      price: 80.0,
+      quantity: 10
+    })
+
+    Exchange.send_instruction(exchange_pid, %{
+      instruction: :delete,
+      side: :ask,
+      price_level_index: 5,
+      price: 80.0,
+      quantity: 10
+    })
+
+    expected = [
+      %{ask_price: 0.0, ask_quantity: 0, bid_price: 0.0, bid_quantity: 0},
+      %{ask_price: 0.0, ask_quantity: 0, bid_price: 0.0, bid_quantity: 0},
+      %{ask_price: 60.0, ask_quantity: 30, bid_price: 0.0, bid_quantity: 0},
+      %{ask_price: 0.0, ask_quantity: 0, bid_price: 0.0, bid_quantity: 0},
+      %{ask_price: 0.0, ask_quantity: 0, bid_price: 0.0, bid_quantity: 0},
+      %{ask_price: 80.0, ask_quantity: 10, bid_price: 0.0, bid_quantity: 0}
+    ]
+
+    assert Exchange.order_book(exchange_pid, 6) == expected
+  end
 end
