@@ -160,4 +160,41 @@ defmodule ExchangeTest do
 
     assert Exchange.order_book(exchange_pid, 6) == expected
   end
+
+  test "on insert existing price levels with a greater or equal index are shifted up" do
+    {:ok, exchange_pid} = Exchange.start_link()
+
+    Exchange.send_instruction(exchange_pid, %{
+      instruction: :new,
+      side: :ask,
+      price_level_index: 2,
+      price: 60.0,
+      quantity: 30
+    })
+
+    Exchange.send_instruction(exchange_pid, %{
+      instruction: :new,
+      side: :ask,
+      price_level_index: 3,
+      price: 70.0,
+      quantity: 20
+    })
+
+    Exchange.send_instruction(exchange_pid, %{
+      instruction: :new,
+      side: :ask,
+      price_level_index: 2,
+      price: 90.0,
+      quantity: 5
+    })
+
+    expected = [
+      %{ask_price: 0.0, ask_quantity: 0, bid_price: 0.0, bid_quantity: 0},
+      %{ask_price: 90.0, ask_quantity: 5, bid_price: 0.0, bid_quantity: 0},
+      %{ask_price: 60.0, ask_quantity: 30, bid_price: 0.0, bid_quantity: 0},
+      %{ask_price: 70.0, ask_quantity: 20, bid_price: 0.0, bid_quantity: 0},
+    ]
+
+    assert Exchange.order_book(exchange_pid, 4) == expected
+  end
 end
