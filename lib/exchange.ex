@@ -28,9 +28,12 @@ defmodule Exchange do
   @spec order_book(exchange :: pid(), book_depth :: integer()) :: list(book())
   def order_book(exchange, book_depth) do
     Agent.get(exchange, fn store ->
-      store
-      |> Enum.take_while(fn {key, _} -> key <= book_depth end)
-      |> Enum.map(fn {_key, book} -> get_book_info(book) end)
+      store = Map.new(store)
+
+      for key <- 1..book_depth do
+        book = Map.get(store, key, %{})
+        get_book_info(book)
+      end
     end)
   end
 
