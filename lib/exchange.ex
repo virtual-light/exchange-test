@@ -30,14 +30,7 @@ defmodule Exchange do
     Agent.get(exchange, fn store ->
       store
       |> Enum.take_while(fn {key, _} -> key <= book_depth end)
-      |> Enum.map(fn {_key, book} ->
-        %{
-          ask_price: book.ask.price,
-          ask_quantity: book.ask.quantity,
-          bid_price: book.bid.price,
-          bid_quantity: book.bid.quantity
-        }
-      end)
+      |> Enum.map(fn {_key, book} -> get_book_info(book) end)
     end)
   end
 
@@ -51,11 +44,23 @@ defmodule Exchange do
 
   defp insert(store, params) do
     key = params.price_level_index
-    {take, to_shift} = Enum.split(store, key - 1)
-    value = Map.put(init_book(), params.side, %{price: params.price, quantity: params.quantity})
-    shifted = Enum.map(to_shift, fn {price_level, v} -> {price_level + 1, v} end)
+    side = params.side
+    side_params = %{price: params.price, quantity: params.quantity}
 
-    take ++ [{key, value}] ++ shifted
+    {lower, rest} = Enum.split_while(store, fn {price_level, _} -> price_level < key end)
+
+    if Enum.empty?(rest) do
+      lower ++ [{key, Map.put(%{}, side, side_params)}]
+    else
+      {first_key, book} = List.first(rest)
+
+      if first_key == key and is_nil(Map.get(book, side)) do
+        List.delete_at(lower, -1) ++ [{key, Map.put(book, side, side_params)}] ++ rest
+      else
+        shifted = Enum.map(rest, fn {price_level, v} -> {price_level + 1, v} end)
+        lower ++ [{key, Map.put(%{}, side, side_params)}] ++ shifted
+      end
+    end
   end
 
   defp delete(store, price_level, acc \\ [])
@@ -81,5 +86,15 @@ defmodule Exchange do
     end
   end
 
-  defp init_book, do: %{bid: %{price: 0, quantity: 0}, ask: %{price: 0, quantity: 0}}
+  defp get_book_info(book) do
+    bid_side = Map.get(book, :bid, %{price: 0, quantity: 0.0})
+    ask_side = Map.get(book, :ask, %{price: 0, quantity: 0.0})
+
+    %{
+      ask_price: ask_side.price,
+      ask_quantity: ask_side.quantity,
+      bid_price: bid_side.price,
+      bid_quantity: bid_side.quantity
+    }
+  end
 end
