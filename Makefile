@@ -7,5 +7,8 @@ docker/build:
 
 docker/run: docker/build
 	@docker-compose up -d &&\
-		docker-compose exec app mix deps.get && \
 		docker-compose exec app iex -S mix
+
+docker/exec: docker/build
+	@docker-compose up -d &&\
+		docker-compose exec app bash
