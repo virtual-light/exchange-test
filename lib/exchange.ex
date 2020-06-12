@@ -1,6 +1,8 @@
 defmodule Exchange do
   @moduledoc false
 
+  alias Exchange.StoreKeeper
+
   @type event :: %{
     instruction: :new | :update | :delete,
     side: :bid | :ask,
@@ -16,40 +18,40 @@ defmodule Exchange do
     ask_quantity: integer()
   }
 
+  @type book_store() :: [{integer(), book_info()}]
+  @type book_info() :: %{optional(:bid) => book_side_info(), optional(:ask) => book_side_info()}
+  @type book_side_info() :: %{price: float(), quantity: integer()}
+
+
   def start_link() do
-    Agent.start_link(fn -> [] end)
+    GenServer.start_link(StoreKeeper, :ok)
   end
 
   @spec send_instruction(exchange :: pid(), event :: event()) :: :ok | {:error, any()}
   def send_instruction(exchange, event) do
-    state = Agent.get(exchange, & &1)
-
-    with {:ok, new_state} <- handle_event(state, event) do
-      Agent.update(exchange, fn _ -> new_state end)
-    end
+    GenServer.call(exchange, {:handle_event, event})
   end
 
   @spec order_book(exchange :: pid(), book_depth :: integer()) :: list(book())
   def order_book(exchange, book_depth) do
-    Agent.get(exchange, fn store ->
-      store = Map.new(store)
+    store = exchange |> GenServer.call(:get_store) |> Map.new
 
-      for key <- 1..book_depth do
-        book = Map.get(store, key, %{})
-        get_book_info(book)
-      end
-    end)
+    for key <- 1..book_depth do
+      book = Map.get(store, key, %{})
+      get_book_info(book)
+    end
   end
 
-  defp handle_event(store, %{instruction: :new} = params) do
+  @spec handle_event(book_store(), event()) :: {:ok, book_store()} | {:error, :not_found}
+  def handle_event(store, %{instruction: :new} = params) do
     {:ok, insert(store, params)}
   end
 
-  defp handle_event(store, %{instruction: :delete, price_level_index: price_level}) do
+  def handle_event(store, %{instruction: :delete, price_level_index: price_level}) do
     delete(store, price_level)
   end
 
-  defp handle_event(store, params), do: update(store, params)
+  def handle_event(store, params), do: update(store, params)
 
   defp insert(store, params) do
     key = params.price_level_index
