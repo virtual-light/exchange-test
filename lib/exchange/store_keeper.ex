@@ -1,9 +1,6 @@
 defmodule Exchange.StoreKeeper do
   use GenServer
 
-  def start_link() do
-  end
-
   @impl GenServer
   def init(:ok), do: {:ok, []}
 
