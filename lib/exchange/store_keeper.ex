@@ -2,7 +2,6 @@ defmodule Exchange.StoreKeeper do
   use GenServer
 
   def start_link() do
-
   end
 
   @impl GenServer
@@ -13,6 +12,7 @@ defmodule Exchange.StoreKeeper do
     case Exchange.handle_event(state, event) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
+
       error ->
         {:reply, error, state}
     end

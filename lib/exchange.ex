@@ -4,24 +4,23 @@ defmodule Exchange do
   alias Exchange.StoreKeeper
 
   @type event :: %{
-    instruction: :new | :update | :delete,
-    side: :bid | :ask,
-    price_level_index: integer(),
-    price: float(),
-    quantity: integer()
-  }
+          instruction: :new | :update | :delete,
+          side: :bid | :ask,
+          price_level_index: integer(),
+          price: float(),
+          quantity: integer()
+        }
 
   @type book :: %{
-    bid_price: float(),
-    bid_quantity: integer(),
-    ask_price: float(),
-    ask_quantity: integer()
-  }
+          bid_price: float(),
+          bid_quantity: integer(),
+          ask_price: float(),
+          ask_quantity: integer()
+        }
 
   @type book_store() :: [{integer(), book_info()}]
   @type book_info() :: %{optional(:bid) => book_side_info(), optional(:ask) => book_side_info()}
   @type book_side_info() :: %{price: float(), quantity: integer()}
-
 
   def start_link() do
     GenServer.start_link(StoreKeeper, :ok)
@@ -34,7 +33,7 @@ defmodule Exchange do
 
   @spec order_book(exchange :: pid(), book_depth :: integer()) :: list(book())
   def order_book(exchange, book_depth) do
-    store = exchange |> GenServer.call(:get_store) |> Map.new
+    store = exchange |> GenServer.call(:get_store) |> Map.new()
 
     for key <- 1..book_depth do
       book = Map.get(store, key, %{})

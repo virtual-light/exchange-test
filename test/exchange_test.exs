@@ -58,7 +58,7 @@ defmodule ExchangeTest do
       %{ask_price: 70.0, ask_quantity: 20, bid_price: 40.0, bid_quantity: 40}
     ]
 
-    assert  Exchange.order_book(exchange_pid, 2) == expected
+    assert Exchange.order_book(exchange_pid, 2) == expected
   end
 
   test "only considering price levels that are less than or equal than the specified book_depth" do
@@ -108,7 +108,7 @@ defmodule ExchangeTest do
       %{ask_price: 0, ask_quantity: 0.0, bid_price: 50.0, bid_quantity: 30},
       %{ask_price: 0, ask_quantity: 0.0, bid_price: 0.0, bid_quantity: 0},
       %{ask_price: 0, ask_quantity: 0.0, bid_price: 40.0, bid_quantity: 40},
-      %{ask_price: 0, ask_quantity: 0.0, bid_price: 0.0, bid_quantity: 0},
+      %{ask_price: 0, ask_quantity: 0.0, bid_price: 0.0, bid_quantity: 0}
     ]
 
     assert Exchange.order_book(exchange_pid, 4) == expected
@@ -192,7 +192,7 @@ defmodule ExchangeTest do
       %{ask_price: 0.0, ask_quantity: 0, bid_price: 0.0, bid_quantity: 0},
       %{ask_price: 90.0, ask_quantity: 5, bid_price: 0.0, bid_quantity: 0},
       %{ask_price: 60.0, ask_quantity: 30, bid_price: 0.0, bid_quantity: 0},
-      %{ask_price: 70.0, ask_quantity: 20, bid_price: 0.0, bid_quantity: 0},
+      %{ask_price: 70.0, ask_quantity: 20, bid_price: 0.0, bid_quantity: 0}
     ]
 
     assert Exchange.order_book(exchange_pid, 4) == expected
